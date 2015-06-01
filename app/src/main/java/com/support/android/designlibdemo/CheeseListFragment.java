@@ -21,7 +21,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.widget.TextViewCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
@@ -39,19 +38,44 @@ import java.util.Random;
 
 public class CheeseListFragment extends Fragment {
 
+    private static final String ARG_IS_LIST_EMPTY = "com.support.android.designlibdemo.empty_list";
+    private TextView mErrorMessage;
+    private RecyclerView mRecyclerView;
+
+    public static CheeseListFragment newEmptyInstance() {
+        CheeseListFragment fragment = new CheeseListFragment();
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(ARG_IS_LIST_EMPTY, true);
+        fragment.setArguments(bundle);
+
+        return fragment;
+    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        RecyclerView rv = (RecyclerView) inflater.inflate(
+        View view = inflater.inflate(
                 R.layout.fragment_cheese_list, container, false);
-        setupRecyclerView(rv);
-        return rv;
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerview);
+        mErrorMessage = (TextView) view.findViewById(android.R.id.empty);
+        setupRecyclerView(mRecyclerView);
+        return view;
     }
 
     private void setupRecyclerView(RecyclerView recyclerView) {
         recyclerView.setLayoutManager(new LinearLayoutManager(recyclerView.getContext()));
-        recyclerView.setAdapter(new SimpleStringRecyclerViewAdapter(getActivity(),
-                getRandomSublist(Cheeses.sCheeseStrings, 30)));
+        boolean isEmpty = getArguments() == null ? false : getArguments().getBoolean(ARG_IS_LIST_EMPTY, false);
+        if(isEmpty) {
+            recyclerView.setVisibility(View.GONE);
+            mErrorMessage.setVisibility(View.VISIBLE);
+        } else {
+            recyclerView.setAdapter(new SimpleStringRecyclerViewAdapter(getActivity(),
+                    getRandomSublist(Cheeses.sCheeseStrings, 30)));
+
+            recyclerView.setVisibility(View.VISIBLE);
+            mErrorMessage.setVisibility(View.GONE);
+        }
+
     }
 
     private List<String> getRandomSublist(String[] array, int amount) {
