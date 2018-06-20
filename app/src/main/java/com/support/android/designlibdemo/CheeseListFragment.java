@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -88,20 +89,24 @@ public class CheeseListFragment extends Fragment {
     }
 
     public static class SimpleStringRecyclerViewAdapter
-            extends RecyclerView.Adapter<SimpleStringRecyclerViewAdapter.ViewHolder> {
+            extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+        private static final int TYPE_HEADER = 0;
+        private static final int TYPE_FOOTER = 1;
+        private static final int TYPE_ITEM = 2;
 
         private final TypedValue mTypedValue = new TypedValue();
         private int mBackground;
         private List<String> mValues;
 
-        public static class ViewHolder extends RecyclerView.ViewHolder {
+        public static class ItemViewHolder extends RecyclerView.ViewHolder {
             public String mBoundString;
 
             public final View mView;
             public final ImageView mImageView;
             public final TextView mTextView;
 
-            public ViewHolder(View view) {
+            public ItemViewHolder(View view) {
                 super(view);
                 mView = view;
                 mImageView = (ImageView) view.findViewById(R.id.avatar);
@@ -111,6 +116,24 @@ public class CheeseListFragment extends Fragment {
             @Override
             public String toString() {
                 return super.toString() + " '" + mTextView.getText();
+            }
+        }
+
+        private class HeaderViewHolder extends RecyclerView.ViewHolder {
+            TextView headerTitle;
+
+            public HeaderViewHolder(View view) {
+                super(view);
+                headerTitle = (TextView) view.findViewById(R.id.header_text);
+            }
+        }
+
+        private class FooterViewHolder extends RecyclerView.ViewHolder {
+            TextView footerText;
+
+            public FooterViewHolder(View view) {
+                super(view);
+                footerText = (TextView) view.findViewById(R.id.footer_text);
             }
         }
 
@@ -125,38 +148,84 @@ public class CheeseListFragment extends Fragment {
         }
 
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.list_item, parent, false);
-            view.setBackgroundResource(mBackground);
-            return new ViewHolder(view);
+        public int getItemViewType(int position) {
+            if (position == 0) {
+                return TYPE_HEADER;
+            } else if (position == mValues.size() + 1) {
+                return TYPE_FOOTER;
+            }
+            return TYPE_ITEM;
         }
 
         @Override
-        public void onBindViewHolder(final ViewHolder holder, int position) {
-            holder.mBoundString = mValues.get(position);
-            holder.mTextView.setText(mValues.get(position));
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            if (viewType == TYPE_ITEM) {
+                //Inflating recycle view item layout
+                View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item, parent, false);
+                return new ItemViewHolder(itemView);
+            } else if (viewType == TYPE_HEADER) {
+                //Inflating header view
+                View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_header, parent, false);
+                return new HeaderViewHolder(itemView);
+            } else if (viewType == TYPE_FOOTER) {
+                //Inflating footer view
+                View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_footer, parent, false);
+                return new FooterViewHolder(itemView);
+            } else return null;
+        }
 
-            holder.mView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Context context = v.getContext();
-                    Intent intent = new Intent(context, CheeseDetailActivity.class);
-                    intent.putExtra(CheeseDetailActivity.EXTRA_NAME, holder.mBoundString);
+        @Override
+        public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position) {
 
-                    context.startActivity(intent);
-                }
-            });
 
-            Glide.with(holder.mImageView.getContext())
-                    .load(Cheeses.getRandomCheeseDrawable())
-                    .fitCenter()
-                    .into(holder.mImageView);
+            if (holder instanceof HeaderViewHolder) {
+                HeaderViewHolder headerHolder = (HeaderViewHolder) holder;
+                headerHolder.headerTitle.setText("Header View");
+                headerHolder.headerTitle.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Toast.makeText(CheeseListFragment.newEmptyInstance().getActivity(), "You clicked at Header View!", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            else if (holder instanceof FooterViewHolder) {
+                FooterViewHolder footerHolder = (FooterViewHolder) holder;
+                footerHolder.footerText.setText("Footer View");
+                footerHolder.footerText.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Toast.makeText(CheeseListFragment.newEmptyInstance().getActivity(), "You clicked at Footer View", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else if(holder instanceof ItemViewHolder) {
+
+                int itemPosition = position - 1;
+
+                final ItemViewHolder itemViewHolder = (ItemViewHolder) holder;
+                itemViewHolder.mBoundString = mValues.get(itemPosition);
+                itemViewHolder.mTextView.setText(mValues.get(itemPosition));
+
+                itemViewHolder.mView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Context context = v.getContext();
+                        Intent intent = new Intent(context, CheeseDetailActivity.class);
+                        intent.putExtra(CheeseDetailActivity.EXTRA_NAME, itemViewHolder.mBoundString);
+
+                        context.startActivity(intent);
+                    }
+                });
+
+                Glide.with(itemViewHolder.mImageView.getContext())
+                        .load(Cheeses.getRandomCheeseDrawable())
+                        .fitCenter()
+                        .into(itemViewHolder.mImageView);
+            }
         }
 
         @Override
         public int getItemCount() {
-            return mValues.size();
+            return mValues.size() + 2;
         }
     }
 }
